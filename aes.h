@@ -32,6 +32,5 @@ void aes_encrypt(aes_ctx *, char **, const char *, size_t);
  * @param dst Destination buffer
  * @param src Source buffer
  * @param len Length of source buffer
- * @return Length of decrypted data
  */
-int aes_decrypt(aes_ctx *, char **, const char *, size_t);
+void aes_decrypt(aes_ctx *, char **, const char *, size_t);
