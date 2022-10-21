@@ -30,7 +30,7 @@ void aes_encrypt(aes_ctx *ctx, char **dst, const char *src, size_t len) {
 		ctx->ctr++;
 		aes_encrypt_block(block, ctx->key);
 		for (int j = 0; j < 16; j++) {
-			dst[i + j] = src[i + j] ^ block[j];
+			(*dst)[i + j] = src[i + j] ^ block[j];
 		}
 	}
 	free(padded);
