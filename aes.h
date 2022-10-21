@@ -1,6 +1,4 @@
-#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,5 +35,3 @@ void aes_encrypt(aes_ctx *, char **, const char *, size_t);
  * @return Length of decrypted data
  */
 int aes_decrypt(aes_ctx *, char **, const char *, size_t);
-
-extern void aes_encrypt_block(uint8_t *, const uint8_t *);
