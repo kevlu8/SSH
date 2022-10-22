@@ -9,7 +9,7 @@ typedef struct aes_ctx {
 } aes_ctx;
 
 /**
- * Initialize the AES context.
+ * @brief Initialize the AES context.
  * @param key AES key
  * @param nonce AES nonce
  * @param iv AES IV
@@ -18,7 +18,7 @@ typedef struct aes_ctx {
 aes_ctx *aes_init(const uint8_t *, const uint64_t, const uint64_t);
 
 /**
- * Encrypt a block of data.
+ * @brief Encrypt a buffer.
  * @param ctx AES context
  * @param dst Destination buffer
  * @param src Source buffer
@@ -27,7 +27,7 @@ aes_ctx *aes_init(const uint8_t *, const uint64_t, const uint64_t);
 void aes_encrypt(aes_ctx *, char **, const char *, size_t);
 
 /**
- * Decrypt a block of data.
+ * @brief Decrypt a buffer.
  * @param ctx AES context
  * @param dst Destination buffer
  * @param src Source buffer
