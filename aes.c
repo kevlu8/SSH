@@ -1,6 +1,6 @@
 #include "aes.h"
 
-extern aes_encrypt_block(uint8_t *, uint8_t *);
+extern void aes_encrypt_block(uint8_t *, uint8_t *);
 
 aes_ctx *aes_init(const uint8_t *key, const uint64_t nonce, const uint64_t iv) {
 	// Allocate memory for the context
