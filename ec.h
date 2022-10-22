@@ -1,4 +1,5 @@
 #include <gmp.h>
+#include <string.h>
 
 typedef struct EC_point {
 	mpz_t x;
@@ -8,8 +9,9 @@ typedef struct EC_point {
 
 /**
  * @brief Initialize constants for the curve
+ * @param curve The curve to initialize
  */
-void init_curve();
+void init_curve(const char *);
 
 /**
  * @brief Initialize an EC_point
