@@ -1,4 +1,5 @@
 #include <gmp.h>
+#include <stdio.h>
 #include <string.h>
 
 typedef struct EC_point {
@@ -58,6 +59,18 @@ void EC_init_generator(EC_point *p);
  * @param p The point to clear
  */
 void EC_clear(EC_point *p);
+
+/**
+ * @brief Set an EC_point to the generator point
+ * @param p The point to set
+ */
+void EC_set_generator(EC_point *p);
+
+/**
+ * @brief Set an EC_point to the point at infinity
+ * @param p The point to set
+ */
+void EC_set_inf(EC_point *p);
 
 /**
  * @brief Set an EC_point to a value
@@ -138,9 +151,3 @@ void EC_print(const EC_point *);
  * @param p The point to perform the calculation on
  */
 void EC_calc_y(EC_point *);
-
-/**
- * @brief Free an EC_point
- * @param p The point to free
- */
-void EC_free(EC_point *);

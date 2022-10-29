@@ -83,6 +83,14 @@ void EC_set(EC_point *p, const mpz_t x, const mpz_t y) {
 	p->inf = 0;
 }
 
+void EC_set_generator(EC_point *p) {
+	mpz_set(p->x, G.x);
+	mpz_set(p->y, G.y);
+	p->inf = 0;
+}
+
+void EC_set_inf(EC_point *p) { p->inf = 1; }
+
 void EC_set_x(EC_point *p, const mpz_t x) {
 	mpz_set(p->x, x);
 	p->inf = 0;
@@ -117,14 +125,16 @@ void EC_add(EC_point *p, const EC_point *a, const EC_point *b) {
 			EC_double(p, a);
 			return;
 		} else {
-			mpz_set(p->x, 0);
-			mpz_set(p->y, 0);
+			mpz_set_ui(p->x, 0);
+			mpz_set_ui(p->y, 0);
 			p->inf = 1;
 			return;
 		}
 	}
 	mpz_t m, temp;
 	mpz_inits(m, temp, NULL);
+	EC_point ans;
+	EC_init(&ans);
 	// m = (a.y - b.y)
 	mpz_sub(m, b->y, a->y);
 	mpz_mod(m, m, P);
@@ -140,30 +150,41 @@ void EC_add(EC_point *p, const EC_point *a, const EC_point *b) {
 	// p.x = m^2 - a.x - b.x
 	mpz_sub(temp, temp, a->x);
 	mpz_sub(temp, temp, b->x);
-	mpz_mod(p->x, temp, P);
-	EC_calc_y(p);
+	mpz_mod(ans.x, temp, P);
+	// temp = p.x - a.x
+	mpz_sub(temp, ans.x, a->x);
+	// p.y = m * (p.x - a.x)
+	mpz_mul(ans.y, m, temp);
+	// p.y = m * (p.x - a.x) + a.y
+	mpz_add(ans.y, ans.y, a->y);
+	mpz_neg(ans.y, ans.y);
+	mpz_mod(ans.y, ans.y, P);
 	mpz_clears(m, temp, NULL);
+	EC_copy(p, &ans);
 	p->inf = 0;
+	EC_clear(&ans);
 }
 
 void EC_double(EC_point *p, const EC_point *a) {
 	// If a is the point at infinity, return the point at infinity
 	if (a->inf) {
-		mpz_set(p->x, 0);
-		mpz_set(p->y, 0);
+		mpz_set_ui(p->x, 0);
+		mpz_set_ui(p->y, 0);
 		p->inf = 1;
 		return;
 	}
 	// If a.y == 0, return the point at infinity
 	// Attempting to double a point with y == 0 will result in a division by zero
 	if (mpz_cmp_ui(a->y, 0) == 0) {
-		mpz_set(p->x, 0);
-		mpz_set(p->y, 0);
+		mpz_set_ui(p->x, 0);
+		mpz_set_ui(p->y, 0);
 		p->inf = 1;
 		return;
 	}
 	mpz_t m, temp;
 	mpz_inits(m, temp, NULL);
+	EC_point ans;
+	EC_init(&ans);
 	// m = a.x^2
 	mpz_powm_ui(m, a->x, 2, P);
 	// m = 3 * a.x^2
@@ -179,19 +200,29 @@ void EC_double(EC_point *p, const EC_point *a) {
 	mpz_mod(m, m, P);
 	// temp = m^2
 	mpz_mul(temp, m, m);
+	// p.x = m^2 - 2 * a.x
 	mpz_sub(temp, temp, a->x);
 	mpz_sub(temp, temp, a->x);
-	mpz_mod(p->x, temp, P);
-	EC_calc_y(p);
+	mpz_mod(ans.x, temp, P);
+	// temp = p.x - a.x
+	mpz_sub(temp, ans.x, a->x);
+	// p.y = m * (p.x - a.x)
+	mpz_mul(ans.y, m, temp);
+	// p.y = m * (p.x - a.x) + a.y
+	mpz_add(ans.y, ans.y, a->y);
+	mpz_neg(ans.y, ans.y);
+	mpz_mod(ans.y, ans.y, P);
 	mpz_clears(m, temp, NULL);
+	EC_copy(p, &ans);
 	p->inf = 0;
+	EC_clear(&ans);
 }
 
 void EC_mul(EC_point *p, const EC_point *a, const mpz_t k) {
 	// If k == 0, return the point at infinity
 	if (mpz_cmp_ui(k, 0) == 0) {
-		mpz_set(p->x, 0);
-		mpz_set(p->y, 0);
+		mpz_set_ui(p->x, 0);
+		mpz_set_ui(p->y, 0);
 		p->inf = 1;
 		return;
 	}
@@ -218,12 +249,13 @@ void EC_mul(EC_point *p, const EC_point *a, const mpz_t k) {
 		}
 	}
 	EC_copy(p, &r);
+	EC_clear(&r);
 }
 
 void EC_neg(EC_point *p, const EC_point *a) {
 	mpz_set(p->x, a->x);
-	if (mpz_cmp(a->y, 0) == 0) {
-		mpz_set(p->y, 0);
+	if (mpz_cmp_ui(a->y, 0) == 0) {
+		mpz_set_ui(p->y, 0);
 	} else {
 		mpz_sub(p->y, P, a->y);
 	}
@@ -278,5 +310,3 @@ void EC_print(const EC_point *p) {
 	}
 	putchar(10);
 }
-
-void EC_free(EC_point *p) { mpz_clears(p->x, p->y, NULL); }
