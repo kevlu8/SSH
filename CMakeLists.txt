@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(SSH)
-set(PROJECT_VERSION 0.5.0)
+set(PROJECT_VERSION 0.5.1)
 
 enable_language(C ASM_NASM)
 

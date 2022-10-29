@@ -3,7 +3,7 @@
 mpz_t P, Q, A, B;
 EC_point G;
 
-void init_curve(const char *curve) {
+void EC_init_curve(const char *curve) {
 	if (strncmp(curve, "nistp256", 9) == 0) {
 		mpz_init_set_str(P, "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
 		mpz_init_set_str(Q, "3fffffffc0000000400000000000000000000000400000000000000000000000", 16);
@@ -19,30 +19,33 @@ void init_curve(const char *curve) {
 		mpz_init_set_str(G.x, "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7", 16);
 		mpz_init_set_str(G.y, "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f", 16);
 	} else if (strncmp(curve, "nistp521", 9) == 0) {
-		mpz_init_set_str(
-			P, "01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16
-		);
-		mpz_init_set_str(
-			Q, "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 16
-		);
-		mpz_init_set_str(
-			A, "01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc", 16
-		);
-		mpz_init_set_str(
-			B, "0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00", 16
-		);
-		mpz_init_set_str(
-			G.x, "00c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66", 16
-		);
-		mpz_init_set_str(
-			G.y, "011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650", 16
-		);
+		mpz_init_set_str(P, "01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
+		mpz_init_set_str(Q, "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 16);
+		mpz_init_set_str(A, "01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc", 16);
+		mpz_init_set_str(B, "0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00", 16);
+		mpz_init_set_str(G.x, "00c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66", 16);
+		mpz_init_set_str(G.y, "011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650", 16);
 	}
 	// TODO: add error handling
 	G.inf = 0;
 }
 
-void calc_y(EC_point *p) {
+int EC_field_size() { return mpz_sizeinbase(P, 2); }
+
+int EC_in_field(const mpz_t x) { return mpz_cmp(x, P) < 0; }
+
+void EC_mod(mpz_t y, const mpz_t x) { mpz_mod(y, x, P); }
+
+void EC_div(mpz_t z, const mpz_t x, const mpz_t y) {
+	mpz_t inv;
+	mpz_init(inv);
+	mpz_invert(inv, y, P);
+	mpz_mul(z, x, inv);
+	mpz_mod(z, z, P);
+	mpz_clear(inv);
+}
+
+void EC_calc_y(EC_point *p) {
 	mpz_t temp;
 	mpz_init(temp);
 	// temp = x^3 + A * x + B
@@ -74,25 +77,25 @@ void EC_clear(EC_point *p) {
 	mpz_clear(p->y);
 }
 
-void EC_set(EC_point *p, mpz_t x, mpz_t y) {
+void EC_set(EC_point *p, const mpz_t x, const mpz_t y) {
 	mpz_set(p->x, x);
 	mpz_set(p->y, y);
 	p->inf = 0;
 }
 
-void EC_set_x(EC_point *p, mpz_t x) {
+void EC_set_x(EC_point *p, const mpz_t x) {
 	mpz_set(p->x, x);
 	p->inf = 0;
-	calc_y(p);
+	EC_calc_y(p);
 }
 
-void EC_copy(EC_point *p, EC_point *a) {
+void EC_copy(EC_point *p, const EC_point *a) {
 	mpz_set(p->x, a->x);
 	mpz_set(p->y, a->y);
 	p->inf = a->inf;
 }
 
-void EC_add(EC_point *p, EC_point *a, EC_point *b) {
+void EC_add(EC_point *p, const EC_point *a, const EC_point *b) {
 	// If a is the point at infinity, return b
 	if (a->inf) {
 		mpz_set(p->x, b->x);
@@ -138,12 +141,12 @@ void EC_add(EC_point *p, EC_point *a, EC_point *b) {
 	mpz_sub(temp, temp, a->x);
 	mpz_sub(temp, temp, b->x);
 	mpz_mod(p->x, temp, P);
-	calc_y(p);
+	EC_calc_y(p);
 	mpz_clears(m, temp, NULL);
 	p->inf = 0;
 }
 
-void EC_double(EC_point *p, EC_point *a) {
+void EC_double(EC_point *p, const EC_point *a) {
 	// If a is the point at infinity, return the point at infinity
 	if (a->inf) {
 		mpz_set(p->x, 0);
@@ -179,12 +182,12 @@ void EC_double(EC_point *p, EC_point *a) {
 	mpz_sub(temp, temp, a->x);
 	mpz_sub(temp, temp, a->x);
 	mpz_mod(p->x, temp, P);
-	calc_y(p);
+	EC_calc_y(p);
 	mpz_clears(m, temp, NULL);
 	p->inf = 0;
 }
 
-void EC_mul(EC_point *p, EC_point *a, mpz_t k) {
+void EC_mul(EC_point *p, const EC_point *a, const mpz_t k) {
 	// If k == 0, return the point at infinity
 	if (mpz_cmp_ui(k, 0) == 0) {
 		mpz_set(p->x, 0);
@@ -206,6 +209,7 @@ void EC_mul(EC_point *p, EC_point *a, mpz_t k) {
 	}
 	// Double and add algorithm
 	EC_point r;
+	EC_init(&r);
 	EC_copy(&r, a);
 	for (int i = mpz_sizeinbase(k, 2) - 2; i >= 0; i--) {
 		EC_double(&r, &r);
@@ -213,9 +217,10 @@ void EC_mul(EC_point *p, EC_point *a, mpz_t k) {
 			EC_add(&r, &r, a);
 		}
 	}
+	EC_copy(p, &r);
 }
 
-void EC_neg(EC_point *p, EC_point *a) {
+void EC_neg(EC_point *p, const EC_point *a) {
 	mpz_set(p->x, a->x);
 	if (mpz_cmp(a->y, 0) == 0) {
 		mpz_set(p->y, 0);
@@ -225,7 +230,7 @@ void EC_neg(EC_point *p, EC_point *a) {
 	p->inf = a->inf;
 }
 
-int EC_on_curve(EC_point *p) {
+int EC_on_curve(const EC_point *p) {
 	// If p is the point at infinity, return 1
 	if (p->inf) {
 		return 1;
@@ -252,7 +257,7 @@ int EC_on_curve(EC_point *p) {
 	return 0;
 }
 
-int EC_equal(EC_point *a, EC_point *b) {
+int EC_equal(const EC_point *a, const EC_point *b) {
 	// If a and b are both the point at infinity, return 1
 	if (a->inf && b->inf) {
 		return 1;
@@ -264,3 +269,14 @@ int EC_equal(EC_point *a, EC_point *b) {
 	// Otherwise, return 0
 	return 0;
 }
+
+void EC_print(const EC_point *p) {
+	if (p->inf) {
+		printf("inf");
+	} else {
+		gmp_printf("(0x%Zx, 0x%Zx)", p->x, p->y);
+	}
+	putchar(10);
+}
+
+void EC_free(EC_point *p) { mpz_clears(p->x, p->y, NULL); }
