@@ -28,7 +28,7 @@ enum chacha_result chacha_ctx_init(chacha_ctx *ctx, const char key[32], const ch
 	ctx->existing = NULL;
 	ctx->existing_len = 0;
 	// not used yet
-	ctx->used = 0;
+	ctx->used = CHACHA_UNUSED;
 	return CHACHA_SUCCESS;
 }
 

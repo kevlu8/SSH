@@ -1,3 +1,5 @@
+#pragma once
+
 #include "base64.h"
 #include "ec.h"
 #include "random.h"
