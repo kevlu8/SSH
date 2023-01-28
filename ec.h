@@ -2,6 +2,7 @@
 
 #include <gmp.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct EC_point {
@@ -28,6 +29,12 @@ int EC_field_size();
  * @return 1 if the value is in the field, 0 otherwise
  */
 int EC_in_field(const mpz_t);
+
+/**
+ * @brief Return the order of the curve
+ * @param x The order of the curve
+ */
+void EC_order(mpz_t);
 
 /**
  * @brief Perform a modular reduction on a value

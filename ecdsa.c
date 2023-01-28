@@ -28,53 +28,52 @@ void ECDSA_load_keypair(const char *privkey_filename, const char *pubkey_filenam
 	ECDSA_load_pubkey(pubkey_filename, keypair);
 }
 
+void print_num(mpz_t x) { gmp_printf("0x%Zx\n", x); }
+
 void ECDSA_sign(ECDSA_keypair *keypair, const char *message, int len, char **signature, int *siglen) {
-	char *z, *buf_k;
-	z = malloc(32);
-	int field_bitlen = EC_field_size();
-	int field_bytelen = (field_bitlen + 7) / 8;
-	buf_k = malloc(field_bytelen);
-	mpz_t k, r, s, z_mpz, tmp;
-	EC_point G, K;
-	int rlen, slen;
-	mpz_inits(k, r, s, z_mpz, tmp, NULL);
+	char *e, *buf_k;
+	e = malloc(32);
+	mpz_t k, r, s, n, e_mpz;
+	mpz_inits(k, r, s, n, e_mpz, NULL);
+	EC_point G, kG;
 	EC_init_generator(&G);
-	EC_init(&K);
-	// z is the message digest
-	sha256_digest(message, len, z);
-	// save z as an mpz_t
-	mpz_import(z_mpz, 32, 1, 1, 0, 0, z);
-	// choose random k
+	EC_init(&kG);
+	EC_order(n);
+	// compute e
+	sha256_digest(message, len, e);
+	mpz_import(e_mpz, 32, 1, 1, 0, 0, e);
+	// generate k
+	buf_k = malloc((mpz_sizeinbase(n, 2) + 7) / 8);
 	do {
-		randbytes(buf_k, field_bytelen);
-		mpz_import(k, field_bytelen, 1, 1, 0, 0, buf_k);
-	} while (!EC_in_field(k));
-	// K = kG
-	EC_mul(&K, &G, k);
-	// r = K.x
-	mpz_set(r, K.x);
-	// tmp = ra
-	mpz_mul(tmp, r, keypair->privkey);
-	EC_mod(tmp, tmp);
-	// tmp = z + ra
-	mpz_add(tmp, z_mpz, tmp);
-	EC_mod(tmp, tmp);
-	// s = (z + ra) * K^-1
-	EC_div(s, tmp, k);
-	// calculate length of r and s
+		randbytes(buf_k, (mpz_sizeinbase(n, 2) + 7) / 8);
+		mpz_import(k, (mpz_sizeinbase(n, 2) + 7) / 8, 1, 1, 0, 0, buf_k);
+	} while (mpz_cmp(k, n) >= 0);
+	// compute kG
+	EC_mul(&kG, &G, k);
+	// r = kG.x
+	mpz_set(r, kG.x);
+	// s = (e + r * d) / k
+	mpz_mul(s, r, keypair->privkey);
+	mpz_add(s, s, e_mpz);
+	mpz_invert(k, k, n);
+	mpz_mul(s, s, k);
+	mpz_mod(s, s, n);
+	// save r and s
+	int rlen = (mpz_sizeinbase(r, 2) + 7) / 8;
+	int slen = (mpz_sizeinbase(s, 2) + 7) / 8;
 	// extra 0 byte is added if "sign bit" is set (first bit is for r, second bit is for s)
 	uint8_t extra = 0;
 	rlen = (mpz_sizeinbase(r, 2) + 7) / 8;
 	// add extra 0 byte if "sign bit" is set
-	if (rlen == mpz_sizeinbase(r, 2) / 8)
+	if (rlen * 8 == mpz_sizeinbase(r, 2))
 		extra |= 1;
 	slen = (mpz_sizeinbase(s, 2) + 7) / 8;
 	// add extra 0 byte if "sign bit" is set
-	if (slen == mpz_sizeinbase(s, 2) / 8)
+	if (slen * 8 == mpz_sizeinbase(s, 2))
 		extra |= 2;
 	// allocate memory for signature
 	*siglen = rlen + slen + 6 + (extra & 1) + (extra >> 1);
-	*signature = malloc(*siglen);
+	*signature = calloc(*siglen, 1);
 	// save r and s
 	mpz_export(*signature + 4 + (extra & 1), NULL, 1, 1, 0, 0, r);
 	mpz_export(*signature + 6 + rlen + (extra & 1) + (extra >> 1), NULL, 1, 1, 0, 0, s);
