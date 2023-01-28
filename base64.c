@@ -3,12 +3,12 @@
 void load_base64(const char *filename, char **data, int *len) {
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
-		printf("Error opening file %s for reading", filename);
+		printf("Error opening file %s for reading\n", filename);
 		exit(1);
 	}
 	// Get file size
 	fseek(fp, 0, SEEK_END);
-	*len = ftell(fp);
+	*len = (ftell(fp) / 4) * 3;
 	fseek(fp, 0, SEEK_SET);
 	*data = malloc(*len);
 	char buffer[4];
@@ -48,7 +48,7 @@ void load_base64(const char *filename, char **data, int *len) {
 void save_base64(const char *filename, const char *data, int len) {
 	FILE *fp = fopen(filename, "w");
 	if (fp == NULL) {
-		printf("Error opening file %s for writing", filename);
+		printf("Error opening file %s for writing\n", filename);
 		exit(1);
 	}
 	char buffer[4];
