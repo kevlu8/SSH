@@ -310,3 +310,45 @@ void EC_print(const EC_point *p) {
 	}
 	putchar(10);
 }
+
+void EC_parse_point(const char *data, const int len, EC_point *p) {
+	if (data[0] == 0x00) {
+		// 0x00 means the point at infinity
+		p->inf = 1;
+	} else if (data[0] == 0x04) {
+		// 0x04 means uncompressed
+		mpz_import(p->y, len / 2, 1, 1, 0, 0, data + 1);
+		mpz_import(p->x, len / 2, 1, 1, 0, 0, data + len / 2 + 1);
+	} else if (data[0] == 0x02 || data[0] == 0x03) {
+		// 0x02 means y is even
+		// 0x03 means y is odd
+		mpz_t tmp;
+		mpz_init(tmp);
+		mpz_import(tmp, len - 1, 1, 1, 0, 0, data + 1);
+		EC_set_x(p, tmp);
+		mpz_clear(tmp);
+		if (mpz_tstbit(p->y, 0) != data[0] - 2) {
+			EC_neg(p, p);
+		}
+	} else {
+		printf("Unknown point format\n");
+		exit(1);
+	}
+}
+
+void EC_serialize_point(const EC_point *p, char **data, int *len) {
+	// We will only be using compressed points
+	if (p->inf) {
+		// if the point is the point at infinity, return 0x00
+		*data = malloc(1);
+		(*data)[0] = 0x00;
+		*len = 1;
+		return;
+	} else {
+		// output format: 0x02 if y is even, 0x03 if y is odd, followed by x
+		*len = (mpz_sizeinbase(P, 2) + 7) / 8 + 1;
+		*data = malloc(*len);
+		(*data)[0] = mpz_tstbit(p->y, 0) + 2;
+		mpz_export(*data + 1, NULL, 1, 1, 0, 0, p->x);
+	}
+}

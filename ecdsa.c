@@ -1,5 +1,7 @@
 #include "ecdsa.h"
 
+void ECDSA_init() { EC_init_curve("nistp256"); }
+
 void ECDSA_init_keypair(ECDSA_keypair *keypair) {
 	keypair->pubkey = malloc(sizeof(EC_point));
 	EC_init(keypair->pubkey);
@@ -17,26 +19,8 @@ void ECDSA_load_pubkey(const char *filename, ECDSA_keypair *keypair) {
 	char *data;
 	int len;
 	load_base64(filename, &data, &len);
+	EC_parse_point(data, len, keypair->pubkey);
 	keypair->pubkey->inf = 0;
-	if (data[0] == 0x04) {
-		// 0x04 means uncompressed
-		mpz_import(keypair->pubkey->y, len / 2, 1, 1, 0, 0, data + 1);
-		mpz_import(keypair->pubkey->x, len / 2, 1, 1, 0, 0, data + len / 2 + 1);
-	} else if (data[0] == 0x02 || data[0] == 0x03) {
-		// 0x02 means y is even
-		// 0x03 means y is odd
-		mpz_t tmp;
-		mpz_init(tmp);
-		mpz_import(tmp, len - 1, 1, 1, 0, 0, data + 1);
-		EC_set_x(keypair->pubkey, tmp);
-		mpz_clear(tmp);
-		if (mpz_tstbit(keypair->pubkey->y, 0) != data[0] - 2) {
-			EC_neg(keypair->pubkey, keypair->pubkey);
-		}
-	} else {
-		printf("Unknown public key format");
-		exit(1);
-	}
 }
 
 void ECDSA_load_keypair(const char *privkey_filename, const char *pubkey_filename, ECDSA_keypair *keypair) {
@@ -78,23 +62,29 @@ void ECDSA_sign(ECDSA_keypair *keypair, const char *message, int len, char **sig
 	// s = (z + ra) * K^-1
 	EC_div(s, tmp, k);
 	// calculate length of r and s
+	// extra 0 byte is added if "sign bit" is set (first bit is for r, second bit is for s)
+	uint8_t extra = 0;
 	rlen = (mpz_sizeinbase(r, 2) + 7) / 8;
+	// add extra 0 byte if "sign bit" is set
+	if (rlen == mpz_sizeinbase(r, 2) / 8)
+		extra |= 1;
 	slen = (mpz_sizeinbase(s, 2) + 7) / 8;
+	// add extra 0 byte if "sign bit" is set
+	if (slen == mpz_sizeinbase(s, 2) / 8)
+		extra |= 2;
 	// allocate memory for signature
-	*siglen = rlen + slen + 8;
+	*siglen = rlen + slen + 6 + (extra & 1) + (extra >> 1);
 	*signature = malloc(*siglen);
 	// save r and s
-	mpz_export(*signature + 4, NULL, 1, 1, 0, 0, r);
-	mpz_export(*signature + 8 + rlen, NULL, 1, 1, 0, 0, s);
+	mpz_export(*signature + 4 + (extra & 1), NULL, 1, 1, 0, 0, r);
+	mpz_export(*signature + 6 + rlen + (extra & 1) + (extra >> 1), NULL, 1, 1, 0, 0, s);
 	// save lengths of r and s
-	(*signature)[0] = rlen >> 24;
-	(*signature)[1] = rlen >> 16;
-	(*signature)[2] = rlen >> 8;
-	(*signature)[3] = rlen;
-	(*signature)[4 + rlen] = slen >> 24;
-	(*signature)[5 + rlen] = slen >> 16;
-	(*signature)[6 + rlen] = slen >> 8;
-	(*signature)[7 + rlen] = slen;
+	(*signature)[0] = 0x30;
+	(*signature)[1] = *siglen - 2;
+	(*signature)[2] = 0x02;
+	(*signature)[3] = rlen + (extra & 1);
+	(*signature)[rlen + (extra & 1) + 4] = 0x02;
+	(*signature)[rlen + (extra & 1) + 5] = slen + (extra >> 1);
 }
 
 int ECDSA_verify(ECDSA_keypair *keypair, const char *message, int len, const char *signature) {

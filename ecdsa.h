@@ -28,6 +28,11 @@ typedef struct ECDSA_keypair {
 // if S.x == r then signature is valid
 
 /**
+ * @brief Initialize the ECDSA subsystem.
+ */
+void ECDSA_init();
+
+/**
  * @brief Initialize an ECDSA keypair
  * @param keypair The keypair to initialize
  */

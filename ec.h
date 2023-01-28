@@ -151,3 +151,19 @@ void EC_print(const EC_point *);
  * @param p The point to perform the calculation on
  */
 void EC_calc_y(EC_point *);
+
+/**
+ * @brief Load an EC_point from an octet string
+ * @param data The octet string
+ * @param len The length of the octet string
+ * @param p The point to store the result
+ */
+void EC_parse_point(const char *, const int, EC_point *);
+
+/**
+ * @brief Store an EC_point in an octet string
+ * @param p The point to store
+ * @param data The octet string
+ * @param len The length of the octet string
+ */
+void EC_serialize_point(const EC_point *, char **, int *);
