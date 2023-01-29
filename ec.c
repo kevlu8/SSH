@@ -2,8 +2,12 @@
 
 mpz_t P, Q, A, B, N;
 EC_point G;
+unsigned char EC_initialized = 0;
 
 void EC_init_curve(const char *curve) {
+	if (EC_initialized)
+		return;
+	EC_initialized = 1;
 	if (strncmp(curve, "nistp256", 9) == 0) {
 		mpz_init_set_str(P, "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
 		mpz_init_set_str(Q, "3fffffffc0000000400000000000000000000000400000000000000000000000", 16);
@@ -36,6 +40,8 @@ void EC_init_curve(const char *curve) {
 int EC_field_size() { return mpz_sizeinbase(P, 2); }
 
 int EC_in_field(const mpz_t x) { return mpz_cmp(x, P) < 0; }
+
+void EC_field_prime(mpz_t x) { mpz_set(x, P); }
 
 void EC_order(mpz_t x) { mpz_set(x, N); }
 
@@ -322,8 +328,8 @@ void EC_parse_point(const char *data, const int len, EC_point *p) {
 		p->inf = 1;
 	} else if (data[0] == 0x04) {
 		// 0x04 means uncompressed
-		mpz_import(p->y, len / 2, 1, 1, 0, 0, data + 1);
-		mpz_import(p->x, len / 2, 1, 1, 0, 0, data + len / 2 + 1);
+		mpz_import(p->x, len / 2, 1, 1, 0, 0, data + 1);
+		mpz_import(p->y, len / 2, 1, 1, 0, 0, data + len / 2 + 1);
 	} else if (data[0] == 0x02 || data[0] == 0x03) {
 		// 0x02 means y is even
 		// 0x03 means y is odd
