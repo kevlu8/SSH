@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(SSH)
-set(PROJECT_VERSION 0.4.0)
+set(PROJECT_VERSION 0.8.0)
 
 enable_language(C ASM_NASM)
 
@@ -18,12 +18,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O3")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG} -g -Og -Wall -Wextra -Wpedantic -Wno-comment")
 
-add_library(aes STATIC aes.asm aes.c)
-add_library(ec STATIC ec.c)
-add_library(sha STATIC sha.c)
+add_executable(ssh _aes.asm aes.c base64.c _chacha.asm chacha.c ec.c ecdsa.c network.c random.c sha.c ssh.c)
 
-# add_executable(ssh ssh.c)
-
-# target_link_libraries(ssh aes ec sha)
-
-# target_link_libraries(ssh gmp)
+target_link_libraries(ssh gmp)
