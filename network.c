@@ -24,18 +24,35 @@ char *_make_packet(const char *buf, const int len) {
 
 void send_packet(const int s, const char *buf, const int len) {
 	unsigned char *packet = _make_packet(buf, len);
-	send(s, packet, len + 5 + packet[4], 0);
+	int res;
+	while (1) {
+		send(s, packet, len + 5 + packet[4], 0);
+		if (res != -1 || errno != EAGAIN || errno != EWOULDBLOCK)
+			break;
+		usleep(1000);
+	}
 	free(packet);
 }
 
 int recv_packet(const int s, char *buf) {
 	// receive first 4 bytes
-	int len = recv(s, buf, 4, 0);
+	int len;
+	while (1) {
+		len = recv(s, buf, 4, 0);
+		if (len != -1 || errno != EAGAIN || errno != EWOULDBLOCK)
+			break;
+		usleep(1000);
+	}
 	if (len != 4)
 		return -1;
 	int datalen = ntohl(*(int *)buf);
 	// receive rest of packet
-	len = recv(s, buf, datalen, 0);
+	while (1) {
+		len = recv(s, buf, datalen, 0);
+		if (len != -1 || errno != EAGAIN || errno != EWOULDBLOCK)
+			break;
+		usleep(1000);
+	}
 	if (len != datalen)
 		return -1;
 	int paddinglen = *(unsigned char *)buf;

@@ -63,6 +63,9 @@ int main(int argc, char **argv) {
 	send(s, identification, strlen(identification), 0);
 	len = recv(s, buf, sizeof(buf), 0);
 
+	// set the socket to non blocking
+	fcntl(s, F_SETFL, O_NONBLOCK);
+
 	// initialize exchange hash
 	sha256_ctx Hctx;
 	sha256_init(&Hctx);

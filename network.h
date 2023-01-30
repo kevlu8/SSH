@@ -1,10 +1,13 @@
 #include "aes.h"
 #include "random.h"
 #include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 void send_packet(const int, const char *, const int);
 int recv_packet(const int, char *);
