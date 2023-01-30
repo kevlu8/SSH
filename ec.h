@@ -172,7 +172,7 @@ void EC_parse_point(const char *, const int, EC_point *);
 /**
  * @brief Store an EC_point in an octet string
  * @param p The point to store
- * @param data The octet string
- * @param len The length of the octet string
+ * @param buf The buffer to store the octet string in
+ * @return The length of the octet string
  */
-void EC_serialize_point(const EC_point *, char **, int *);
+int EC_serialize_point(const EC_point *, char *);

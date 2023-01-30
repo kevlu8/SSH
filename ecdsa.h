@@ -76,6 +76,7 @@ void ECDSA_sign(ECDSA_keypair *, const char *, int, char **, int *);
  * @brief Verify a signature
  * @param keypair The keypair to verify with
  * @param message The message to verify
+ * @param len The length of the message
  * @param signature The signature to verify
  * @return 1 if the signature is valid, 0 otherwise
  */
