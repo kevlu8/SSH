@@ -2,10 +2,10 @@
 
 extern void aes_encrypt_block(uint8_t *, uint8_t *);
 
-enum aes_result aes_init(aes_ctx *ctx, const uint8_t *key, const uint64_t nonce, const uint64_t iv) {
+enum aes_result aes_init(aes_ctx *ctx, const uint8_t *key, const uint64_t iv[2]) {
 	// Initialize the context
-	ctx->nonce = nonce;
-	ctx->ctr = iv;
+	ctx->ctr[0] = iv[0];
+	ctx->ctr[1] = iv[1];
 	memcpy(ctx->key, key, 16);
 	ctx->residual_size = 0;
 	return AES_SUCCESS;
@@ -20,12 +20,11 @@ enum aes_result aes_encrypt_update(aes_ctx *ctx, const char *data, const size_t 
 	memcpy(out + ctx->residual_size, data, *out_size - ctx->residual_size);
 	// Encrypt the data
 	for (size_t i = 0; i < *out_size; i += 16) {
-		// Build the block with the nonce and counter
+		// Build the block with the counter
 		uint8_t block[16];
-		memcpy(block, &ctx->nonce, 8);
-		memcpy(block + 8, &ctx->ctr, 8);
+		memcpy(block, &ctx->ctr, 16);
 		// Increment the counter
-		ctx->ctr++;
+		ctx->ctr[0] += (++ctx->ctr[1] == 0);
 		// Encrypt the block
 		aes_encrypt_block(block, ctx->key);
 		// XOR the block with the plaintext
@@ -49,12 +48,11 @@ enum aes_result aes_encrypt_finalize(aes_ctx *ctx, const char *data, const size_
 	memcpy(out + ctx->residual_size, data, data_size);
 	// Encrypt the data
 	for (size_t i = 0; i < *out_size; i += 16) {
-		// Build the block with the nonce and counter
+		// Build the block with the counter
 		uint8_t block[16];
-		memcpy(block, &ctx->nonce, 8);
-		memcpy(block + 8, &ctx->ctr, 8);
+		memcpy(block, &ctx->ctr, 16);
 		// Increment the counter
-		ctx->ctr++;
+		ctx->ctr[0] += (++ctx->ctr[1] == 0);
 		// Encrypt the block
 		aes_encrypt_block(block, ctx->key);
 		// XOR the block with the plaintext

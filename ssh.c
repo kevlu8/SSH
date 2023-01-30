@@ -304,10 +304,10 @@ int main(int argc, char **argv) {
 	// initialize ciphers (macs are not implemented yet)
 	// client to server
 	aes_ctx c2s;
-	aes_init(&c2s, kctos, *(uint64_t *)ivctos, *(uint64_t *)(ivctos + 8));
+	aes_init(&c2s, kctos, (uint64_t *)ivctos);
 	// server to client
 	aes_ctx s2c;
-	aes_init(&s2c, kstoc, *(uint64_t *)ivstoc, *(uint64_t *)(ivstoc + 8));
+	aes_init(&s2c, kstoc, (uint64_t *)ivstoc);
 
 	len = recv_packet_aes(&s2c, s, buf);
 

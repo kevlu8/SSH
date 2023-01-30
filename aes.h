@@ -10,8 +10,7 @@ enum aes_result {
 
 typedef struct aes_ctx {
 	uint8_t key[16];
-	uint64_t nonce;
-	uint64_t ctr;
+	uint64_t ctr[2];
 	uint8_t residual[15];
 	uint8_t residual_size;
 } aes_ctx;
@@ -20,11 +19,10 @@ typedef struct aes_ctx {
  * @brief Initialize the AES context.
  * @param ctx AES context
  * @param key AES key
- * @param nonce AES nonce
  * @param iv AES IV
  * @return AES_SUCCESS on success, <0 on error
  */
-enum aes_result aes_init(aes_ctx *, const uint8_t *, const uint64_t, const uint64_t);
+enum aes_result aes_init(aes_ctx *, const uint8_t *, const uint64_t[2]);
 
 /**
  * @brief Update the AES context with new data.
